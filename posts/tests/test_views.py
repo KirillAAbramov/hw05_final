@@ -253,11 +253,12 @@ class ViewsTest(TestCase):
         author_client = Client()
         author_client.force_login(author)
 
-        follow = Follow.objects.count()
-
-        Follow.objects.create(user=user, author=author)
-
-        self.assertEqual(Follow.objects.count(), follow + 1)
+        response = user_client.get(reverse('profile_follow',
+                                   args=[author.username]),
+                                   follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(Follow.objects.filter(user=user,
+                                              author=author).exists())
 
     def test_authorized_user_unfollows_other_users(self):
         """Авторизованный пользователь может удалять пользователей
@@ -271,11 +272,12 @@ class ViewsTest(TestCase):
         author_client = Client()
         author_client.force_login(author)
 
-        Follow.objects.create(user=user, author=author)
-        follow = Follow.objects.count()
-        Follow.objects.filter(user=user, author=author).delete()
-
-        self.assertEqual(Follow.objects.count(), follow - 1)
+        response = user_client.get(reverse('profile_unfollow',
+                                   args=[author.username]),
+                                   follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Follow.objects.filter(user=user,
+                                               author=author).exists())
 
     def test_new_post_in_news_feed(self):
         """Новая запись пользователя появляется в ленте тех,

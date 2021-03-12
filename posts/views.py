@@ -55,15 +55,18 @@ def profile(request, username):
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
     if request.user.is_authenticated:
-        following = bool(Follow.objects.filter(user=request.user,
-                                               author=author))
-    else:
-        following = False
+        following = Follow.objects.filter(user=request.user,
+                                          author=author)
+        return render(request, 'profile.html', {
+            'author': author,
+            'page': page,
+            'paginator': paginator,
+            'following': following,
+        })
     return render(request, 'profile.html', {
         'author': author,
         'page': page,
         'paginator': paginator,
-        'following': following,
     })
 
 
@@ -128,18 +131,19 @@ def follow_index(request):
 @login_required
 def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
-    if author == request.user:
+    user = request.user
+    if author != user:
+        Follow.objects.get_or_create(user=user, author=author)
         return redirect('profile', username=username)
-    Follow.objects.get_or_create(user=request.user, author=author)
     return redirect('profile', username=username)
 
 
 @login_required
 def profile_unfollow(request, username):
     author = get_object_or_404(User, username=username)
-    follow = Follow.objects.filter(user=request.user, author=author)
-    if follow:
-        follow.delete()
+    user = request.user
+    follow = Follow.objects.filter(user=user, author=author)
+    follow.delete()
     return redirect('profile', username=username)
 
 
